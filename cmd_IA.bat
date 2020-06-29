@@ -1,0 +1,1 @@
+%activate_project% && cd C:\Users\GSCA\Desktop\final_project_sauvegarde &&  python train_from_ui_test.py %1 %2 %3 %4 %5 %6 %7
