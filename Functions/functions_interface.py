@@ -15,7 +15,8 @@ from adtk.detector import AutoregressionAD
 from influxdb import InfluxDBClient
 import pandas as pd
 import matplotlib.pyplot as plt
-from Existing_Predictor import Existing_Predictor
+from Simple_lstm_existing_predictor import Simple_lstm_existing_predictor
+from Functions.ml_functions import mad_numpy
 
 INFLUX_NAME= os.environ['INFLUX_NAME']
 INFLUX_PASSWORD= os.environ['INFLUX_PASSWORD']
@@ -42,6 +43,7 @@ def get_field_names(results,measurement):
             if type(results.raw["series"][i]["values"][:]) != int:
                 P = P + results.raw["series"][i]["values"]
     return np.array(P)
+
 
 def select_apply_model(Model,df,dfa_2,period,host,measurement,path,form):
     df=df.set_index("ds")
@@ -96,31 +98,114 @@ def select_apply_model(Model,df,dfa_2,period,host,measurement,path,form):
         st.write("L'odre du modèle AR correspond aux nombres de points utlisée pour décrire le points suivant ex AR d'ordre 1 n'utilise que le point N-1 pour décrire le point N. Ce modèle est a privilégié si les données sont cyclique mais pas seasonal ie se répétent mais pas formcément au même moment de la semaine etc)")
         step_size = st.number_input('Select step sier  (default 24) ')
         st.write("Nombre de pas entre chaque point ")
-        model = AutoregressionAD(n_steps=7 * 2, step_size=24, c=3.0)
+        model = AutoregressionAD(n_steps=int(nb_steps), step_size=int(step_size), c=3.0)
         do_anomaly_detection(s,model,"marker",s2)
 
     elif Model == "Model_IA":
         st.write("ATTENTION ! Le modèle utilisé est celui pour faire les prédictions donc la fréqeunce d'extraction des données doit être la même que celle choisit lors de l'entrainement initial,si la prévisualisation n'affiche rien augmenter le nombre de semaines à requêter ")
         c = st.number_input('Select C ')
         st.write("INDICATION : 'C' est l'ecart à partir duquel un point est concidéré comme une anomalie ")
-        look_back = transform_time(period)*1
         taille_motif  = st.number_input("Taille du motif qui se répète ie nombre impaire qui correspond à la fréquence d'échantillonage")
-        Future = Existing_Predictor(df, host, measurement,look_back , "mse", 1, 10, 1, form.split(","), freq_period=int(taille_motif),file=path)
+
+        Future = Simple_lstm_existing_predictor(df, host, measurement,c , "mse", 1, 10, 1, form.split(","), freq_period=int(taille_motif),file=path)
         Future.make_prediction(df,c)
         st.pyplot()
         Future.make_prediction(dfa_2,c)
         plt.title("Comparaison avec la période sélectionnée ")
         st.pyplot()
+        model=c
+
+    elif Model == "Modele_custom":
+        c = st.number_input('Select severity ')
+        w = st.number_input('Select window size ')
+        apply_custom_model(df, dfa_2, c, int(w))
+
+    elif Model=="Model_VAR_LSTM":
+        c = st.number_input('Select C ')
+        apply_VAR_LSTM(form, measurement, host, df, dfa_2,int(c))
+
+
     elif Model=="Change_in_relation" :
         regression_ad = RegressionAD(regressor=LinearRegression(), target="Speed (kRPM)", c=3.0)
         anomalies = regression_ad.fit_detect(df)
         plot(df, anomaly=anomalies, ts_linewidth=1, ts_markersize=3, anomaly_color='red', anomaly_alpha=0.3,
-             curve_group='all');
-    if model :
-        return model
-    else :
-        return c
+             curve_group='all')
+    return model
 
+
+def apply_VAR_LSTM(form,measurement,host,df,dfa_2,c):
+    file = ""
+    if type(form) != list:
+        form = form[1:].split(",")
+    else:
+        form = form
+    try:
+        for element in form:
+            value = element.split("=")
+            file = file + '_' + value[1]
+        file = file[1:].replace(":", "")
+    except Exception:
+        file = host
+    file = file.replace(" ", "")
+    path = "Modeles/" + file + "_" + measurement
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    path = "Modeles/" + file + "_" + measurement + "/" + "var" + ".h5"
+    from var_encoder import New_VAR_LSTM, Existing_VAR_LSTM
+    if not os.path.isfile(path):
+        var_encoder = New_VAR_LSTM(c, c, df, form, measurement, host)
+        model = 0
+    else:
+
+        var_encoder = Existing_VAR_LSTM(c, path, form, measurement, host)
+        model, scaler = var_encoder.load_models()
+        prediction = var_encoder.make_prediction(df["y"], model, c, scaler)
+        plt.plot(np.array(df["y"]))
+        print((prediction[1][-1]))
+        prediction = np.append(prediction[0], [prediction[i][-1] for i in range(1, len(prediction))])
+
+        for i in range(len(prediction)):
+            if prediction[i] == True:
+                plt.scatter(i, np.array(df["y"][i]), marker="x", color="red")
+        plt.show()
+        st.pyplot()
+        prediction = var_encoder.make_prediction(dfa_2["y"], model,  c, scaler)
+        plt.plot(np.array(dfa_2["y"]))
+        prediction = np.append(prediction[0], [prediction[i][-1] for i in range(1, len(prediction))])
+        for i in range(len(prediction)):
+            if prediction[i] == True:
+                plt.scatter(i, np.array(dfa_2["y"][i]), marker="x", color="red")
+        plt.show()
+        st.pyplot()
+
+
+def apply_custom_model(df,dfa_2,c,w):
+    #c = 5
+    #w = 5
+    median = np.array(df.rolling(w).median().dropna())
+    std = np.array(df["y"])
+    std = mad_numpy(std, w)
+    print(len(median[:, 0] - c * std[:]))
+    print(len(median[:, 0] + c * std[:], ))
+    x = np.arange(0, len(median[:, 0] + c * std[:]), 1)
+    plt.fill_between(x + w - 1, median[:, 0] + c * std[:], median[:, 0] - c * std[:], color="blue")
+    for i in range(w - 1, len(df["y"])):
+        if abs(df["y"][i - w + 1] - median[i - w + 1]) > c * std[i - w + 1]:
+            plt.scatter(i - w + 1, df["y"][i - w + 1], marker="x", color="black")
+    plt.plot(np.array(df["y"]), color="red", label="real value")
+    st.pyplot()
+    median = np.array(dfa_2.rolling(w).median().dropna())
+    std = np.array(dfa_2["y"])
+    std = mad_numpy(std, w)
+    print(len(median[:, 0] - c * std[:]))
+    print(len(median[:, 0] + c * std[:], ))
+    x = np.arange(0, len(median[:, 0] + c * std[:]), 1)
+    plt.fill_between(x, median[:, 0] + c * std[:], median[:, 0] - c * std[:], color="blue")
+    for i in range(w - 1, len(dfa_2["y"])):
+        if abs(dfa_2["y"][i - w + 1] - median[i - w + 1]) > c * std[i - w + 1]:
+            plt.scatter(i - w + 1, dfa_2["y"][i - w + 1], marker="x", color="black")
+    plt.plot(np.array(dfa_2["y"]), color="red", label="real value")
+    st.pyplot()
 def do_anomaly_detection(s,model,marker,s2):
     '''
         This function apply the model to the historical data and plot the results
@@ -328,13 +413,9 @@ def write_request_analyse(measurement,cond,gb,client,num):
 
 
 def applied_model(Model, df, dfa_2, period, host, measurement, path, form):
-    try:
-        model=select_apply_model(Model, df, dfa_2, period, host, measurement, path, form)
-    except Exception:
-        st.write(
-            " PROBLEME : Problème lors de l'entrainement du modèle. Le modèle ne convient pas aux données (par exemple SeasonalAD avec des données non cycliques)")
-        st.write(
-            " PROBLEME : SI vous utilisez le modele IA, vous devez extraire au moins deux semaines de données ")
+
+    model=select_apply_model(Model, df, dfa_2, period, host, measurement, path, form)
+
     return model
 
 

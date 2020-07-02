@@ -1,0 +1,45 @@
+var host='SUPRALOG-DEVOPS-MONITORING '
+var report='ACI '
+
+
+var realtime = batch
+                |query('SELECT mean(yhat) as real_value FROM "telegraf"."autogen".pred_ga_real_time WHERE host=host AND report=report')
+                    .period(5m)
+                    .every(5m)
+                    .align()
+                |last('real_value')
+                    .as('real_value')
+                |log()
+                    .prefix('P0-1')
+                    .level('DEBUG')
+
+            
+            var predicted = batch
+                |query('SELECT mean(yhat) as prediction FROM "telegraf"."autogen".pred_3ga_real_time WHERE host=host AND report=report')
+                    .period(5m)
+                    .every(1h)
+                    .align()
+                |last('prediction')
+                    .as('prediction')
+                |log()
+                    .prefix('P0-2')
+                    .level('DEBUG')
+            
+            
+            var joined_data = realtime
+                |join(predicted)
+                    .as('realtime', 'predicted')
+                    .tolerance(20m)
+            
+            
+            var performance_error = joined_data
+                |eval(lambda: abs("realtime.real_value" - "predicted.prediction"))
+                    .as('performance_error')
+                |alert()
+                    .crit(lambda: "performance_error" > 10 )
+                    .message('Attention le modèle associé à  AND host=SUPRALOG-DEVOPS-MONITORING AND report=ACI  dévie par rapport à la mémoire de : {{ index .Fields "performance_error" }}')
+                    .slack()
+                    .exec('C:\Users\GSCA\Desktop\final_project\script.bat', '"SUPRALOG-DEVOPS-MONITORING"', '"ga_real_time"', '"host=SUPRALOG-DEVOPS-MONITORING,report=ACI "', '"60m"', '"sum"', '"activeUsers"')
+                |log()
+                    .prefix('P0-3')
+                    .level('DEBUG')

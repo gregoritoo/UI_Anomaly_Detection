@@ -24,7 +24,7 @@ INFLUX_HOST = "influxdb-monitoring.supralog.com"
 INFLUX_SSL = True
 INFLUX_VERIFY_SSL = True
 
-
+from scipy.stats import anderson
 
 def load_data_for_analyse(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field):
     dfa, client = make_sliced_request_multicondition(host, db, measurement, period, gb, cond, nb_week_to_query,
@@ -85,6 +85,10 @@ def modifie_df_for_fb(dfa, typo):
         df = df.reset_index(drop=True)
         dfa = df.rename(columns={"time": "ds", typo: "y"})
     return dfa,count,count_2
+
+
+
+
 
 
 def make_sliced_request(host, db, measurement, period, gb, past, typo, dic, field):

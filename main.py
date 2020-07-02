@@ -5,7 +5,9 @@ import os
 from Pages.Page_two import Page_two
 from Pages.Page_one import Page_one
 from Functions.functions_interface import  write_request,write_request_analyse
+from Functions.functions import transform_time
 from Pages.Page_three import Page_three
+from Pages.Page_four import Page_four
 
 path_to_bat = os.environ["Scripts_UI"]
 
@@ -30,30 +32,37 @@ selection = st.sidebar.radio("Go to", list(PAGES.keys()))
 
 page = PAGES[selection]
 db = "telegraf"
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.widgets import SpanSelector
+from Simple_lstm_new_predictor import Simple_lstm_new_predictor
 
+def onselect(xmin, xmax):
+    print("hello")
 if page == 1:
-    try:
+
         first_page=Page_one(db)
-        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas=first_page.make_side_component(db,write_request)
+        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time=first_page.make_side_component(db,write_request)
         date_range = st.text_input("select problematique time range", "2019-09-01/2019-09-30")
         form,df,dfa_2=first_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field, date_range)
-        st.line_chart(df["y"])
+        plt.plot(df["y"])
+        st.pyplot()
+        tab = [df["y"].autocorr(lag) for lag in range(0, len(df["y"]))]
+        plt.plot(tab)
+        st.pyplot()
         model,Model,save=first_page.anomaly_detection(form, measurement, df, dfa_2, period, host)
-        first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,nb_pas,period,gb,cond)
-    except (NameError, IndexError, TypeError):
-        if NameError and not TypeError and not Exception and not IndexError:
-            st.write(
-                " PROBLEME : La requête ne retourne rien, merci de vérifier les parametres ou de s'assurer que la période choisi possède bien des données")
-        elif IndexError:
-            st.write(" PROBLEME :  Erreur dans les choix des paramètres du modèle ")
 
+        first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,group_by_time,period,gb,cond)
+        taille_motif_2 = st.number_input(
+            "Taille du motif pour la detection d'anomalie qui se répète ie nombre impaire qui correspond à la fréquence d'échantillonage")
+        tat=st.button("Test")
+        if tat :
 
-
-
+            first_page.create_IA_for_AD(form, host, measurement, db,int(taille_motif_2), period,int(taille_motif_2),gb,cond,typo,field)
 elif page == 2:
     try :
         second_page = Page_two(db)
-        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas= second_page.make_side_component(
+        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time= second_page.make_side_component(
             db,write_request_analyse)
         List,COUNT,COUNT_2=second_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field)
         second_page.plot_pie(List,cond)
@@ -70,7 +79,7 @@ elif page == 2:
 elif page == 3:
     try :
         third_page=Page_three(db)
-        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas = third_page.make_side_component(
+        measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas ,group_by_time= third_page.make_side_component(
             db, write_request)
         measurement_2, dic, field_2, cond_2, gb_2, results, typo_2, host_2 = third_page.make_second_side_componant( db, write_request)
         df,count,count_2= third_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field)
@@ -91,3 +100,5 @@ elif page == 3:
             st.write("Probleme avec le calcul de correlation")
     except Exception :
         st.write("La requête ne renvoie rien, merci de vérifier les paramètres")
+
+

@@ -9,17 +9,9 @@ from Query_3 import Query_all
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import seasonal_decompose
 from scipy.stats import normaltest
-from scipy.stats import shapiro
 from sklearn.linear_model import LinearRegression
-from numpy import diff
-from influxdb import InfluxDBClient
-from Alert import Alert
-from scipy.signal import find_peaks
-from scipy import signal
-from statsmodels.graphics.tsaplots import plot_acf
 from piecewise import piecewise
 
-from scipy.stats import anderson
 def modifie_df_for_fb(dfa,typo):
     if type(dfa)==list :
         df=dfa[0]
@@ -199,7 +191,7 @@ def write_predictions(df,client,measurement,host,db,form):
     '''
     if form[0] != "," :
         form=","+form 
-    df["measurement"]="PRED_"+measurement
+    df["measurement"]="PRED_ATTENTION"+measurement
     fill=(form[1 :].replace("=",",")).split(",")
     if len(form) < 2 :
         fill = "host="+host
@@ -207,7 +199,7 @@ def write_predictions(df,client,measurement,host,db,form):
     key=[elt for idx, elt in enumerate(fill) if idx % 2 == 0]
     values=[elt for idx, elt in enumerate(fill) if idx % 2 != 0]
     dic=dict(zip(key,values))
-    client.delete_series(database=db,measurement="PRED_"+measurement,tags=dic)
+    client.delete_series(database=db,measurement="PRED_ATTENTION"+measurement,tags=dic)
     cp = df[['ds', 'yhat','yhat_lower','yhat_upper','measurement']].copy()
     lines = [str(cp["measurement"][d])
                      + ",type=forecast"
@@ -330,19 +322,7 @@ def try_normal(data):
     else:
     	print('Sample does not look Gaussian (reject H0)')
 
-def one_week_data_request(host,db,measurement,period,gb):
-    if measurement=="mem" :
-        query=Query_Mem(db)
-    elif measurement =="cpu":
-        query=Query_Cpu(db)
-    elif measurement =="disk":
-       query=Query_Disk(db)
-    cond="AND host='"+host+"'"
-    every=str(1) + 'w '
-    result,client =query.request(every,period,cond,gb)
-    df = result[host]
-    df.reset_index()
-    return df,client
+
 
 
 def make_form(df,host):
@@ -410,7 +390,6 @@ def train_linear_model(df,borne_max,severity):
         last linear part of the data.
 
     '''
-    from piecewise import piecewise_plot
     x=np.arange(len(df["y"]-1))
     model = piecewise(x,df["y"])
     #piecewise_plot(x, df["y"], model=model)

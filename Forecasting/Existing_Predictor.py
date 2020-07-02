@@ -5,23 +5,12 @@ Created on Tue Jun  2 10:57:39 2020
 @author: GSCA
 """
 
-import pandas as pd
-import time
-import numpy as np
-import os
-from datetime import datetime
-from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request,scale,inverse_difference,difference,invert_scale
-from influxdb import InfluxDBClient
-from functions import make_sliced_request
-from statsmodels.tsa.seasonal import seasonal_decompose
-from ml_functions import decoupe_dataframe
-from tensorflow.keras.models import Sequential,save_model,load_model
-from tensorflow.keras.layers import Dense,LSTM
-import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter
-from Predictor import Predictor 
 
+from tensorflow.keras.models import Sequential,save_model,load_model
+
+from Predictor import Predictor
+import pickle
+from keras_self_attention import SeqSelfAttention
 
 
 class Existing_Predictor(Predictor):
@@ -49,9 +38,9 @@ class Existing_Predictor(Predictor):
             value=element.split("=")
             file=file+'_'+value[1]
         file=file[1 :].replace(":","")
-        model_trend=load_model("Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5")
-        model_seasonal=load_model("Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5")
-        model_residual=load_model("Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5")
+        model_trend=load_model("Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
+        model_seasonal=load_model("Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
+        model_residual=load_model("Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
         return model_trend,model_seasonal,model_residual
     
 

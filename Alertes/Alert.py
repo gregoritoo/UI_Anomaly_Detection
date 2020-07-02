@@ -39,14 +39,14 @@ class Alert():
         texte = texte + "\n\n" + """var data = batch
                 |query('SELECT """ + typo + """(*) FROM """ + db + """."autogen".""" + self.measurement + """ WHERE """ + where_condition[
                                                                                                                           : -5] + """')
-                    .period(""" + str(int(4 * pas)) + """m)
+                    .period(""" + str(int(25 * pas)) + """m)
                     .every(""" + str(int(pas)) + """m)
                     .groupBy(time(""" + str(int(pas)) + """m))
 
                 data
                   @udf_test()
                     .field('""" + typo + """_""" + field + """')
-                    .size(3)
+                    .size(25)
                     .model('""" + path_to_model + """')
                   |alert()
                     .crit(lambda: "val_anomalies" > 10)

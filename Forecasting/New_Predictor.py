@@ -15,7 +15,7 @@ from influxdb import InfluxDBClient
 from functions import make_sliced_request
 from statsmodels.tsa.seasonal import seasonal_decompose
 from tensorflow.keras.models import Sequential,save_model
-from tensorflow.keras.layers import Dense,LSTM,Dropout
+from tensorflow.keras.layers import Dense,LSTM,Dropout,Activation,RepeatVector
 from tensorflow.keras.callbacks import EarlyStopping,Callback
 import matplotlib.pyplot as plt
 from Predictor import Predictor
@@ -31,7 +31,8 @@ class New_Predictor(Predictor):
         self.measurement=measurement
         self.form=form
         self.freq_period=freq_period
-        trend_x, trend_y,seasonal_x,seasonal_y,residual_x,residual_y=self.prepare_data(df,look_back,self.freq_period)
+        self.look_back=look_back
+        trend_x, trend_y,seasonal_x,seasonal_y,residual_x,residual_y=self.prepare_data(df,look_back,self.freq_period,self.form)
         model_trend=self.make_models(nb_layers,loss,metric,nb_features,optimizer,True)
         model_seasonal=self.make_models(nb_layers,loss,metric,nb_features,optimizer,False)
         model_residual=self.make_models(nb_layers,loss,metric,nb_features,optimizer,False)
@@ -72,7 +73,11 @@ class New_Predictor(Predictor):
         model.add(Dropout(0.2))
         model.add(LSTM(nb_layers))
         model.add(Dropout(0.2))
+        model.add(Activation('softmax'))  # output_shape = (batch, step)
+        #model.add(RepeatVector(n=self.look_back))
         model.add(Dense(int(nb_layers/2),activation='relu'))
+        #model.add(SeqSelfAttention(attention_activation='sigmoid',attention_width=25,
+    #history_only=True))
         model.add(Dense(1))
         model.compile(loss=loss,optimizer=optimizer,metrics=['mse'])
         print("model_made")

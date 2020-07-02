@@ -23,7 +23,7 @@ class Page():
 
     def make_side_component(self,db,write_request):
         nb_pas = st.number_input('Select frequency (in minutes)')
-
+        group_by_time=int(nb_pas)
         period = str(int(nb_pas)) + "m"
 
         time_obj = Time(period)
@@ -55,7 +55,7 @@ class Page():
 
         dic = ""
         nb_week_to_query = st.slider(' nb_week_to_query ')
-        return measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas
+        return measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time
 
     def plot_pie(self,List,cond):
         plt.pie(x=[List[i]["y"].sum() for i in range(len(cond))],
@@ -161,10 +161,10 @@ class Page():
             except Exception:
                 file = host
             file = file.replace(" ", "")
-            path_to_model = "Modeles/" + file + "_" + measurement
+            path_to_model = "Modeles/" + file + "_" + measurement+field
             message = " Alert trigged : this is an anomalie "
             alerte = Alert_IA(host, measurement)
-            alerte.create(message, form, nb_pas, path_to_model, field, typo, db, model, freq_period)
+            alerte.create(message, form, period, path_to_model, field, typo, db, model, freq_period)
             alerte.save_alert()
             time.sleep(1)
             alerte.launch()
