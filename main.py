@@ -9,6 +9,10 @@ from Functions.functions import transform_time
 from Pages.Page_three import Page_three
 from Pages.Page_four import Page_four
 import plotly.graph_objects as go
+
+
+
+
 path_to_bat = os.environ["Scripts_UI"]
 
 

@@ -11,7 +11,7 @@ from tensorflow.keras.models import Sequential,save_model
 from tensorflow.keras.layers import Dense,LSTM,Dropout,Activation,RepeatVector
 import matplotlib.pyplot as plt
 from Predictor import Predictor
-
+from keras_self_attention import SeqSelfAttention
 
             
 class New_Predictor(Predictor):
@@ -68,8 +68,8 @@ class New_Predictor(Predictor):
         model.add(Activation('softmax'))  # output_shape = (batch, step)
         #model.add(RepeatVector(n=self.look_back))
         model.add(Dense(int(nb_layers/2),activation='relu'))
-        #model.add(SeqSelfAttention(attention_activation='sigmoid',attention_width=24,
-    #history_only=True))
+        model.add(SeqSelfAttention(attention_activation='sigmoid',attention_width=self.look_back,
+    history_only=True))
         model.add(Dense(1))
         model.compile(loss=loss,optimizer=optimizer,metrics=['mse'])
         print("model_made")
