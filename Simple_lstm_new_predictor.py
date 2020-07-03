@@ -2,7 +2,7 @@
 import numpy as np
 from Functions.functions import write_predictions, modifie_df_for_fb, make_sliced_request, decoupe_dataframe
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, Dropout
+from tensorflow.keras.layers import Dense, LSTM, Dropout,Activation
 import matplotlib.pyplot as plt
 from Simple_lstm_predictor import Simple_lstm_predictor
 
@@ -52,11 +52,12 @@ class Simple_lstm_new_predictor(Simple_lstm_predictor):
         if trend:
             nb_layers = int(nb_layers / 1)
         model = Sequential()
-        model.add(LSTM(nb_layers, return_sequences=True, activation='relu', input_shape=(nb_features, self.look_back)))
+        model.add(LSTM(nb_layers, return_sequences=True, activation='softmax', input_shape=(nb_features, self.look_back)))
         model.add(Dropout(0.2))
         model.add(LSTM(nb_layers))
         model.add(Dropout(0.2))
-        model.add(Dense(int(nb_layers / 2), activation='relu'))
+        model.add(Activation('softmax'))
+        model.add(Dense(int(nb_layers / 2), activation='softmax'))
         model.add(Dense(1))
         model.compile(loss=loss, optimizer=optimizer, metrics=['mse'])
         print("model_made")

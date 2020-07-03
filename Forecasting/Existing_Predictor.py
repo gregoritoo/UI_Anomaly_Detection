@@ -10,7 +10,7 @@ from tensorflow.keras.models import Sequential,save_model,load_model
 
 from Predictor import Predictor
 import pickle
-from keras_self_attention import SeqSelfAttention
+
 
 
 class Existing_Predictor(Predictor):
@@ -38,9 +38,9 @@ class Existing_Predictor(Predictor):
             value=element.split("=")
             file=file+'_'+value[1]
         file=file[1 :].replace(":","")
-        model_trend=load_model("Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
-        model_seasonal=load_model("Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
-        model_residual=load_model("Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
+        model_trend=load_model("Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5")
+        model_seasonal=load_model("Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5")
+        model_residual=load_model("Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5")
         return model_trend,model_seasonal,model_residual
     
 

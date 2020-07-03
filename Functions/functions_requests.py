@@ -193,6 +193,7 @@ def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, 
             df = pd.concat(li, axis=0, join="outer")
             df = df.reset_index()
             lli = df[["time", typo]]
+            print(lli)
         else:
             for k in range(len(week) - 1):
                 every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
@@ -208,11 +209,13 @@ def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, 
                             dfs[t][j - 1] = li[j][i]
                         lli[i] = pd.concat(dfs[0], axis=0, join="outer").reset_index()
                         t = t + 1
+                        print(lli)
                 else:
                     for j in range(1, len(week)):
                         li[j] = pd.DataFrame(result[0])
                     lli = pd.concat(li, axis=0, join="outer").reset_index()
                     lli = lli[["time", typo]]
+                    print(lli)
             else:
                 lli = None
         return lli, client

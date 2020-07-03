@@ -4,19 +4,11 @@ Created on Tue May 19 14:13:15 2020
 
 @author: GSCA
 """
-from sklearn.model_selection import GridSearchCV
-import pandas as pd
-import time
+
 import numpy as np
-import os
-from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request,decoupe_dataframe
-from influxdb import InfluxDBClient
-from functions import make_sliced_request
-from statsmodels.tsa.seasonal import seasonal_decompose
+from prediction_functions import write_predictions,modifie_df_for_fb,make_sliced_request,decoupe_dataframe
 from tensorflow.keras.models import Sequential,save_model
 from tensorflow.keras.layers import Dense,LSTM,Dropout,Activation,RepeatVector
-from tensorflow.keras.callbacks import EarlyStopping,Callback
 import matplotlib.pyplot as plt
 from Predictor import Predictor
 
@@ -76,7 +68,7 @@ class New_Predictor(Predictor):
         model.add(Activation('softmax'))  # output_shape = (batch, step)
         #model.add(RepeatVector(n=self.look_back))
         model.add(Dense(int(nb_layers/2),activation='relu'))
-        #model.add(SeqSelfAttention(attention_activation='sigmoid',attention_width=25,
+        #model.add(SeqSelfAttention(attention_activation='sigmoid',attention_width=24,
     #history_only=True))
         model.add(Dense(1))
         model.compile(loss=loss,optimizer=optimizer,metrics=['mse'])
@@ -141,7 +133,7 @@ class New_Predictor(Predictor):
         x_train = np.reshape(x_train,(int(len(x_train)/self.look_back), 1,self.look_back))
         train_predict=model.predict(x_train)
         plt.plot(train_predict)
-        plt.plot(df_a[: -self.look_back]) #plot tout df_a si on souhaite le mettre en prod 
+        plt.plot(df_a[: -self.look_back])
         plt.show()
         
     

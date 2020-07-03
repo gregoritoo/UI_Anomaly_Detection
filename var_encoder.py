@@ -11,13 +11,13 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 from Functions.ml_functions import decoupe_dataframe
 from tensorflow.keras.models import save_model,Sequential
 from tensorflow.keras.callbacks import Callback
-from tensorflow.keras.layers import Dense, LSTM, Dropout,TimeDistributed,RepeatVector
+from tensorflow.keras.layers import Dense, LSTM, Dropout,TimeDistributed,RepeatVector,Activation
 from sklearn.preprocessing import PowerTransformer
 from tensorflow.keras.models import load_model
 import pandas as pd
 import os
 import pickle
-
+from AttentionDecoder import AttentionDecoder
 
 class VAR_LSTM():
     def __init__(self,look_back,form,measurement,host):
@@ -82,12 +82,14 @@ class New_VAR_LSTM(VAR_LSTM):
 
     def make_model(slef, look_back):
         model = Sequential()
-        model.add(LSTM(units=64, input_shape=(1, look_back)))
-        model.add(Dropout(0.2))
+        model.add(LSTM(units=128, input_shape=(1, look_back),return_sequences=True))
+        """model.add(Dropout(0.2))
+        model.add(Activation('softmax'))
         model.add(RepeatVector(n=look_back))
         model.add(LSTM(units=64, return_sequences=True))
         model.add(Dropout(0.2))
-        model.add(TimeDistributed(Dense(units=1)))
+        model.add(TimeDistributed(Dense(units=1)))"""
+        model.add(AttentionDecoder(128, 1))
         model.compile(loss='mse', optimizer='adam')
         return model
 

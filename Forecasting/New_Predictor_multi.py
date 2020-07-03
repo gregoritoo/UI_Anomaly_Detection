@@ -1,14 +1,5 @@
-from sklearn.model_selection import GridSearchCV
-import pandas as pd
-import time
+
 import numpy as np
-import os
-from datetime import datetime
-from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request,scale,inverse_difference,difference,invert_scale
-from influxdb import InfluxDBClient
-from functions import make_sliced_request
-from statsmodels.tsa.seasonal import seasonal_decompose
 from ml_functions import decoupe_dataframe
 from tensorflow.keras.models import Sequential,save_model
 from tensorflow.keras.layers import Dense,LSTM,Dropout

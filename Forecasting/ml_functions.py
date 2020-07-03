@@ -6,16 +6,8 @@ Created on Tue May 19 14:13:26 2020
 """
 
 
-import pandas as pd
-import time
+
 import numpy as np
-import pickle
-from datetime import datetime
-from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request
-from influxdb import InfluxDBClient
-from functions import make_sliced_request
-from statsmodels.tsa.seasonal import seasonal_decompose
 from keras.models import Sequential
 from keras.layers import Dense,LSTM
 

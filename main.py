@@ -8,7 +8,7 @@ from Functions.functions_interface import  write_request,write_request_analyse
 from Functions.functions import transform_time
 from Pages.Page_three import Page_three
 from Pages.Page_four import Page_four
-
+import plotly.graph_objects as go
 path_to_bat = os.environ["Scripts_UI"]
 
 
@@ -45,11 +45,13 @@ if page == 1:
         measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time=first_page.make_side_component(db,write_request)
         date_range = st.text_input("select problematique time range", "2019-09-01/2019-09-30")
         form,df,dfa_2=first_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field, date_range)
-        plt.plot(df["y"])
-        st.pyplot()
-        tab = [df["y"].autocorr(lag) for lag in range(0, len(df["y"]))]
-        plt.plot(tab)
-        st.pyplot()
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=list(df.index), y=list(df.y)))
+        fig.update_layout(
+            title_text="Time series with range slider and selectors"
+        )
+        st.plotly_chart(fig)
         model,Model,save=first_page.anomaly_detection(form, measurement, df, dfa_2, period, host)
 
         first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,group_by_time,period,gb,cond)

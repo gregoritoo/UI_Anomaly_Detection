@@ -1,22 +1,13 @@
 
 
 import pandas as pd
-import time
+
 import numpy as np
-import pickle
-from datetime import datetime
 from Alert import Alert
-from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request,evaluate_linearity,train_linear_model,make_sliced_request,modifie_df_for_fb,make_form,transform_time,make_sliced_request_multicondition
+from datetime import datetime
+from prediction_functions import write_predictions,modifie_df_for_fb,make_sliced_request,evaluate_linearity,train_linear_model,make_sliced_request,modifie_df_for_fb,make_form,transform_time,make_sliced_request_multicondition
 from influxdb import InfluxDBClient
-from statsmodels.tsa.seasonal import seasonal_decompose
 from New_Predictor import New_Predictor
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error as mse
-from  scipy import stats
-from sklearn.metrics import r2_score
-from sklearn.linear_model import LinearRegression
-from numpy import diff
 import sys
 
 def predict(df,form,len_prediction,host,measurement,db,severity,freq_period,look_back,force_ml_model):
@@ -119,9 +110,11 @@ df, client = make_sliced_request_multicondition(host, db, measurement, period, g
 df = modifie_df_for_fb(df, typo)
 df_a=df
 prediction,lower,upper=predict(df,form,len_prediction,host,measurement,db,severity,freq_period,look_back,force_ml_model)
+print(prediction[0])
 dates=pd.date_range(df["ds"][len(df)-12],freq=time_obj.pandas_time, periods=len_prediction)
 df2=pd.DataFrame({"ds" : dates , "yhat" : np.transpose(prediction[0]),"yhat_upper" :np.transpose(upper[0]),"yhat_lower" :np.transpose(lower[0]) })
 df=df.append(df2[ :]).reset_index()
+
 write_predictions(df,client_2,measurement,host,db,form)
 #########a supprimer avant de mettre en prod
 cp = df_a[['ds', 'y']].copy()

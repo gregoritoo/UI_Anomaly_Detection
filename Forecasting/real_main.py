@@ -7,9 +7,9 @@ import pickle
 from datetime import datetime
 from Alert import Alert
 from datetime import datetime, timedelta
-from functions import write_predictions,modifie_df_for_fb,make_sliced_request,evaluate_linearity,train_linear_model
+from prediction_functions import write_predictions,modifie_df_for_fb,make_sliced_request,evaluate_linearity,train_linear_model
 from influxdb import InfluxDBClient
-from functions import make_sliced_request,modifie_df_for_fb,make_form,transform_time
+from prediction_functions import make_sliced_request,modifie_df_for_fb,make_form,transform_time
 from statsmodels.tsa.seasonal import seasonal_decompose
 from New_Predictor import New_Predictor
 import matplotlib.pyplot as plt

@@ -1,7 +1,7 @@
 
 import numpy as np
 import os
-from functions import decoupe_dataframe
+from prediction_functions import decoupe_dataframe
 from statsmodels.tsa.seasonal import seasonal_decompose
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping,Callback

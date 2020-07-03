@@ -1,7 +1,7 @@
 
 import numpy as np
 import os
-from functions import decoupe_dataframe
+from prediction_functions import decoupe_dataframe
 from statsmodels.tsa.seasonal import seasonal_decompose
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping,Callback
@@ -96,7 +96,6 @@ class Predictor ():
         scaler = PowerTransformer()
         self.scaler2=scaler.fit(np.reshape(np.array(df["y"]), (-1, 1)))
         Y =  self.scaler2.transform(np.reshape(np.array(df["y"]), (-1, 1)))
-        print(Y)
         if not os.path.isdir(path):
             os.makedirs(path)
         scalerfile = path + "/" + 'scaler.sav'
@@ -240,8 +239,6 @@ class Predictor ():
             data_seasonal = np.append(data_seasonal[1:], [prediction_seasonal]).reshape(-1, 1)
             
             prediction[0,i]=prediction_residual+prediction_trend+prediction_seasonal
-        print("prediction ",np.reshape(prediction,(1,-1)))
-        print('inervse prediction ', self.scaler2.inverse_transform(np.reshape(prediction,(-1,1))))
         prediction=self.scaler2.inverse_transform(np.reshape(prediction, (-1, 1)))
         lower,upper=self.frame_prediction(np.reshape(prediction,(1,-1)))
         return np.reshape(prediction,(1,-1)),lower,upper
@@ -267,7 +264,8 @@ class Predictor ():
             array contening the upper boundry values (1,N) size.
 
         '''
-        mae=-1*np.mean(self.scaler2.inverse_transform(np.reshape(self.residual,(-1,1))))
+        decomposition = seasonal_decompose(self.df["y"], period = self.freq_period+1)
+        mae=-1*np.mean(decomposition.resid)
         std_deviation=np.std(self.residual)
         sc = 1.96       #1.96 for a 95% accuracy
         margin_error = mae + sc * std_deviation

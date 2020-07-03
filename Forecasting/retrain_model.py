@@ -8,7 +8,7 @@ import pickle
 from datetime import datetime
 from influxdb import InfluxDBClient
 from datetime import timedelta 
-from functions import make_sliced_request,write_predictions,modifie_df_for_fb,make_sliced_request_multicondition,modifie_df_for_fb,train_linear_model,transform_time
+from prediction_functions import make_sliced_request,write_predictions,modifie_df_for_fb,make_sliced_request_multicondition,modifie_df_for_fb,train_linear_model,transform_time
 from Query_3 import Query_all
 from Existing_Predictor import Existing_Predictor
 from statsmodels.tsa.seasonal import seasonal_decompose
