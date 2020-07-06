@@ -10,7 +10,7 @@ from tensorflow.keras.models import Sequential,save_model,load_model
 
 from Predictor import Predictor
 import pickle
-from keras_self_attention import SeqSelfAttention
+
 
 
 class Existing_Predictor(Predictor):
@@ -23,7 +23,7 @@ class Existing_Predictor(Predictor):
         self.form=form
         self.look_back=look_back
         self.freq_period=freq_period
-        trend_x, trend_y,seasonal_x,seasonal_y,residual_x,residual_y=self.prepare_data(df,look_back,freq_period)
+        trend_x, trend_y,seasonal_x,seasonal_y,residual_x,residual_y=self.prepare_data(df,look_back,freq_period,self.form)
         model_trend,model_seasonal,model_residual=self.load_models()
         model_trend=self.train_model(model_trend,trend_x,trend_y,nb_epochs,nb_batch,"trend")
         model_seasonal=self.train_model(model_seasonal,seasonal_x,seasonal_y,nb_epochs,nb_batch,"seasonal")
@@ -38,9 +38,10 @@ class Existing_Predictor(Predictor):
             value=element.split("=")
             file=file+'_'+value[1]
         file=file[1 :].replace(":","")
-        model_trend=load_model("Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
-        model_seasonal=load_model("Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
-        model_residual=load_model("Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5",custom_objects=SeqSelfAttention.get_custom_objects())
+        model_trend=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5")
+        model_seasonal=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5")
+        model_residual=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5")
+        print("loaded")
         return model_trend,model_seasonal,model_residual
     
 

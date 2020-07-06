@@ -82,11 +82,13 @@ class New_VAR_LSTM(VAR_LSTM):
 
     def make_model(slef, look_back):
         model = Sequential()
+        model.add(LSTM(units=128, input_shape=(1, look_back), return_sequences=True))
+        model.add(Dropout(0.3))
         model.add(LSTM(units=64, input_shape=(1, look_back)))
-        model.add(Dropout(0.2))
-        model.add(RepeatVector(n=look_back))
+        model.add(RepeatVector(n=1))
         model.add(LSTM(units=64, return_sequences=True))
-        model.add(Dropout(0.2))
+        model.add(Dropout(0.3))
+        model.add(LSTM(units=128, input_shape=(1, look_back), return_sequences=True))
         model.add(TimeDistributed(Dense(units=1)))
         model.compile(loss='mse', optimizer='adam')
         return model

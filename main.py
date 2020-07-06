@@ -35,7 +35,7 @@ db = "telegraf"
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import SpanSelector
-from Simple_lstm_new_predictor import Simple_lstm_new_predictor
+import plotly.graph_objects as go
 
 def onselect(xmin, xmax):
     print("hello")
@@ -45,20 +45,17 @@ if page == 1:
         measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time=first_page.make_side_component(db,write_request)
         date_range = st.text_input("select problematique time range", "2019-09-01/2019-09-30")
         form,df,dfa_2=first_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field, date_range)
-        plt.plot(df["y"])
-        st.pyplot()
-        tab = [df["y"].autocorr(lag) for lag in range(0, len(df["y"]))]
-        plt.plot(tab)
-        st.pyplot()
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=list(df.index), y=list(df.y)))
+        fig.update_layout(
+            title_text="Time series with range slider and selectors"
+        )
+        st.plotly_chart(fig)
         model,Model,save=first_page.anomaly_detection(form, measurement, df, dfa_2, period, host)
 
         first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,group_by_time,period,gb,cond)
-        taille_motif_2 = st.number_input(
-            "Taille du motif pour la detection d'anomalie qui se répète ie nombre impaire qui correspond à la fréquence d'échantillonage")
-        tat=st.button("Test")
-        if tat :
 
-            first_page.create_IA_for_AD(form, host, measurement, db,int(taille_motif_2), period,int(taille_motif_2),gb,cond,typo,field)
 elif page == 2:
     try :
         second_page = Page_two(db)

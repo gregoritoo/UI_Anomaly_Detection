@@ -94,13 +94,20 @@ class Predictor ():
         path = "Modeles/" + file + "_" + self.measurement
         self.look_back=look_back
         df=df.dropna()
-        scaler = PowerTransformer()
-        self.scaler2=scaler.fit(np.reshape(np.array(df["y"]), (-1, 1)))
-        Y =  self.scaler2.transform(np.reshape(np.array(df["y"]), (-1, 1)))
-        if not os.path.isdir(path):
-            os.makedirs(path)
         scalerfile = path + "/" + 'scaler.sav'
-        pickle.dump( self.scaler2, open(scalerfile, 'wb'))
+        if not scalerfile :
+            if (df["y"].max() - df["y"].min()) > 100:
+                scaler = PowerTransformer()
+            else :
+                scaler= IdentityTransformer()
+            self.scaler2=scaler.fit(np.reshape(np.array(df["y"]), (-1, 1)))
+            Y =  self.scaler2.transform(np.reshape(np.array(df["y"]), (-1, 1)))
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            pickle.dump(self.scaler2, open(scalerfile, 'wb'))
+        else :
+            self.scaler2=pickle.load(open( scalerfile, "rb" ))
+            Y = self.scaler2.transform(np.reshape(np.array(df["y"]), (-1, 1)))
         decomposition = seasonal_decompose(Y, period = freq_period+1)
         df.loc[:,'trend'] = decomposition.trend
         df.loc[:,'seasonal'] = decomposition.seasonal
@@ -190,10 +197,10 @@ class Predictor ():
        except Exception :
            file=self.host
        file=file.replace(" ","")
-       path=r"Modeles/"+file+"_"+self.measurement
+       path="Modeles_pred/"+file+"_"+self.measurement
        if not os.path.isdir(path) :
            os.makedirs(path)
-       path=r"Modeles/"+file+"_"+self.measurement+"/"+name+".h5"
+       path="Modeles_pred/"+file+"_"+self.measurement+"/"+name+".h5"
        save_model(model,path)
 
 

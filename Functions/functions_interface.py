@@ -15,7 +15,6 @@ from adtk.detector import AutoregressionAD
 from influxdb import InfluxDBClient
 import pandas as pd
 import matplotlib.pyplot as plt
-from Simple_lstm_existing_predictor import Simple_lstm_existing_predictor
 from Functions.ml_functions import mad_numpy
 
 INFLUX_NAME= os.environ['INFLUX_NAME']
@@ -101,20 +100,6 @@ def select_apply_model(Model,df,dfa_2,period,host,measurement,path,form):
         model = AutoregressionAD(n_steps=int(nb_steps), step_size=int(step_size), c=3.0)
         do_anomaly_detection(s,model,"marker",s2)
 
-    elif Model == "Model_IA":
-        st.write("ATTENTION ! Le modèle utilisé est celui pour faire les prédictions donc la fréqeunce d'extraction des données doit être la même que celle choisit lors de l'entrainement initial,si la prévisualisation n'affiche rien augmenter le nombre de semaines à requêter ")
-        c = st.number_input('Select C ')
-        st.write("INDICATION : 'C' est l'ecart à partir duquel un point est concidéré comme une anomalie ")
-        taille_motif  = st.number_input("Taille du motif qui se répète ie nombre impaire qui correspond à la fréquence d'échantillonage")
-
-        Future = Simple_lstm_existing_predictor(df, host, measurement,c , "mse", 1, 10, 1, form.split(","), freq_period=int(taille_motif),file=path)
-        Future.make_prediction(df,c)
-        st.pyplot()
-        Future.make_prediction(dfa_2,c)
-        plt.title("Comparaison avec la période sélectionnée ")
-        st.pyplot()
-        model=c
-
     elif Model == "Modele_custom":
         c = st.number_input('Select severity ')
         w = st.number_input('Select window size ')
@@ -123,7 +108,6 @@ def select_apply_model(Model,df,dfa_2,period,host,measurement,path,form):
     elif Model=="Model_VAR_LSTM":
         c = st.number_input('Select C ')
         apply_VAR_LSTM(form, measurement, host, df, dfa_2,int(c))
-
 
     elif Model=="Change_in_relation" :
         regression_ad = RegressionAD(regressor=LinearRegression(), target="Speed (kRPM)", c=3.0)
@@ -147,12 +131,13 @@ def apply_VAR_LSTM(form,measurement,host,df,dfa_2,c):
     except Exception:
         file = host
     file = file.replace(" ", "")
-    path = "Modeles/" + file + "_" + measurement
+    path = "Modeles_AD/" + file + "_" + measurement
     if not os.path.isdir(path):
         os.makedirs(path)
-    path = "Modeles/" + file + "_" + measurement + "/" + "var" + ".h5"
+    path = "Modeles_AD/" + file + "_" + measurement + "/" + "var" + ".h5"
     from var_encoder import New_VAR_LSTM, Existing_VAR_LSTM
-    if not os.path.isfile(path):
+    butt = st.button("Retrain anomaly detection modele")
+    if not os.path.isfile(path) or butt :
         var_encoder = New_VAR_LSTM(c, c, df, form, measurement, host)
         model = 0
     else:
@@ -206,6 +191,7 @@ def apply_custom_model(df,dfa_2,c,w):
             plt.scatter(i - w + 1, dfa_2["y"][i - w + 1], marker="x", color="black")
     plt.plot(np.array(dfa_2["y"]), color="red", label="real value")
     st.pyplot()
+
 def do_anomaly_detection(s,model,marker,s2):
     '''
         This function apply the model to the historical data and plot the results

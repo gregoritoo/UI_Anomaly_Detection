@@ -155,8 +155,9 @@ def write_predictions(df,client,measurement,host,db,form):
     None.
     '''
     if form[0] != "," :
-        form=","+form 
-    df["measurement"]="PRED_ATTENTION_2"+measurement
+        form=","+form
+    print(df)
+    df["measurement"]="ATT_PRED_"+measurement
     fill=(form[1 :].replace("=",",")).split(",")
     if len(form) < 2 :
         fill = "host="+host
@@ -164,7 +165,7 @@ def write_predictions(df,client,measurement,host,db,form):
     key=[elt for idx, elt in enumerate(fill) if idx % 2 == 0]
     values=[elt for idx, elt in enumerate(fill) if idx % 2 != 0]
     dic=dict(zip(key,values))
-    client.delete_series(database=db,measurement="PRED_ATTENTION_2"+measurement,tags=dic)
+    client.delete_series(database=db,measurement="ATT_PRED_"+measurement,tags=dic)
     cp = df[['ds', 'yhat','yhat_lower','yhat_upper','measurement']].copy()
     lines = [str(cp["measurement"][d])
                      + ",type=forecast"

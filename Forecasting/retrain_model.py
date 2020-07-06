@@ -121,9 +121,10 @@ for element in form.split(","):
     value=element.split("=")
     file=file+'_'+value[1]
 file=file[1 :].replace(":","")
-path="Modeles/"+file+"_"+measurement
+path=r"../Modeles//"+file+"_"+measurement
+print(path)
 if  os.path.isdir(path) :
-    Future=Existing_Predictor(df,host,measurement,look_back,"mse",1,10,1,form.split(","),freq_period=7)
+    Future=Existing_Predictor(df,host,measurement,look_back,"mse",1,10,1,form.split(","),freq_period=look_back)
     prediction,lower,upper=Future.make_prediction(len_prediction)
 else : 
     model=train_linear_model(df,86,25)
