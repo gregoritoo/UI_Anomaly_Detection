@@ -136,8 +136,7 @@ class Page():
         st.write("Ceci va lancer l'entrainement ainsi que la prédiction de la mesure pour les trois prochain mois")
 
         if save and Model != "Model_IA":
-            path_to_model = 'C:/Users/GSCA/Desktop/UDFs/kapacitor/udf/agent/py/Modeles/model_' + form[1:].replace(" ",
-                                                                                                                  "") + '.sav'
+            path_to_model = r'Modeles_AD/model_' + form[1:].replace(" ","") + '.sav'
             pickle.dump(model, open(path_to_model, 'wb'))
             alerte = Alert(host, measurement)
             message = " Alert trigged : this is an anomalie "
@@ -147,7 +146,7 @@ class Page():
             alerte.launch()
             st.write("Model saved and alert trigged !")
             save = False
-        elif save and Model == "Model_IA":
+        elif save and Model == "ENCODER_VAR_LSTM":
             file = ""
             if type(form) != list:
                 form = form[1:].split(",")
@@ -161,7 +160,7 @@ class Page():
             except Exception:
                 file = host
             file = file.replace(" ", "")
-            path_to_model = "Modeles/" + file + "_" + measurement+field
+            path_to_model = "Modeles_AD/" + file + "_" + measurement+field
             message = " Alert trigged : this is an anomalie "
             alerte = Alert_IA(host, measurement)
             alerte.create(message, form, period, path_to_model, field, typo, db, model, freq_period)
