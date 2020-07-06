@@ -70,72 +70,12 @@ class Query():
         print(query)
         self.gb = gb
         results = client.query(query)
-        return results
+        return pd.DataFrame(results.get_points(measurement=measurement))
 
-    def arrange_results_query(self, results):
-        '''
-
-        This function arrange the request's result (Json type) in a dataframe :
-
-            The result has many groups (one group by class after applying the groupby )
-
-            In this groups : one row with columns's names row(0)
-
-                               rows with the values row(1 to end)
-
-        Note : NEED TO DEFINE name and password as variables environnement for connection to influxdb
-
-        Parameters
-
-        ----------
-
-        results : request.response
-
-           result of the request
-
-        db : str
-
-        Returns
-
-        -------
-
-        d : dataframe
-
-            dataframe containing the data.
-
-        client : Influxdb object
-
-            API to interact with the database, will be needed to write the prediction later.
-
-        '''
-        li = {}
-        try:
-            if len(results.raw["series"]) >= 1:
-                if len(results.raw["series"][0]["tags"]) == 1:
-                    for i in range(len(results.raw["series"])):
-                        NAME = results.raw["series"][i]["tags"]["host"]
-                        li[NAME] = pd.DataFrame(results.raw["series"][i]["values"],
-                                                columns=results.raw["series"][0]["columns"])
-                elif len(results.raw["series"][0]["tags"]) > 1:
-                    li = [None] * len(results.raw["series"])
-                    for i in range(len(results.raw["series"])):
-                        df = pd.DataFrame(results.raw["series"][i]["values"],
-                                          columns=results.raw["series"][0]["columns"])
-                        for p in range(0, len(results.raw["series"][i]["tags"])):
-                            df[self.gb.split(",")[p]] = results.raw["series"][i]["tags"][self.gb.split(",")[p]]
-                        li[i] = df
-                    NAME = ""
-                return li
-
-        except KeyError:
-            if KeyError:
-                print("La combinaison de paramètres choisi n'est pas valable")
-            return -1
 
     def request(self, every, period, cond, gb, dic):
         client = connect_database(self.db)
-        results = self.make_query(self.measurement, every, cond, gb, period, self.client, dic)
-        df = self.arrange_results_query(results)
+        df = self.make_query(self.measurement, every, cond, gb, period, self.client, dic)
         return df, client
 
 

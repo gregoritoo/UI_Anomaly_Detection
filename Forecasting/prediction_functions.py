@@ -45,7 +45,8 @@ def modifie_df_for_fb(dfa,typo):
         dfa=df.rename(columns={"time":"ds",typo :"y"})
     return dfa
 
-def make_sliced_request(host,db,measurement,period,gb,past,typo):
+
+def make_sliced_request(host, db, measurement, period, gb, past, typo, dic, field):
     '''
     This function slices the request on requests of one week length and after that joins all the data in one dataframe
 
@@ -72,99 +73,63 @@ def make_sliced_request(host,db,measurement,period,gb,past,typo):
     client : Influxdb object
         API to interact with the database, will be needed to write the prediction later.
     '''
-    query = Query_all(db, host, typo, field, measurement)
-    cond="AND host='"+host+"'"
-    week=np.linspace(0,past,past+1)
-    li=[None]*len(week)
-    if len(gb) < 6  :
-        for k in  range (len(week)-1) :
-            every=str(int(week[k+1])) + 'w AND "time" < now() - '+ str(int(week[k])) + 'w '
-            result,client =query.request(every,period,cond,gb)
-            df=result[host]
-            li[len(week)-1-k]=df
-        df= pd.concat(li, axis=0, join="outer")
-        df=df.reset_index()
-        lli=df[["time","mean"]]
-    else  :
-        for k in  range (len(week)-1) :
-            every=str(int(week[k+1])) + 'w AND "time" < now() - '+ str(int(week[k])) + 'w '
-            result,client =query.request(every,period,cond,gb)
-            li[len(week)-1-k]=result
-        dfs=[[None]*(len(week)-1)]*len(result)
-        t=0
-        lli=[None]*len(result)
-        for i in range(len(result)):
-            for j in range(1,len(week)):
-                try :
-                    dfs[t][j-1]=li[j][i]
-                except Exception :
-                    print("error while requesting data")
-            lli[i]=pd.concat(dfs[0], axis=0, join="outer").reset_index()
-            t = t + 1
-    return lli,client
-
-def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, past, typo,dic,field):
-    '''
-    This function slices the request on requests of one week length and after that joins all the data in one dataframe
-
-    Parameters
-    ----------
-    host : str
-        Influxdb host we want to work on.
-    db : str
-        influxdb database to connect to.
-    measurement : str
-        Influxdb's measurement .
-    period : str
-        windows to focus on (duration in influxdb syntax ix "5m").
-    gb : str
-        group by condition of the requeste to write with influx db syntax
-        ex "host,element_to_groupby," => always end with ","
-
-    Returns
-    -------
-    df : str
-        dataframe contening all the data.
-    host : str
-        name of the host, not useful.
-    client : Influxdb object
-        API to interact with the database, will be needed to write the prediction later.
-    '''
+    cond = ""
     query = Query_all(db, host, typo, field, measurement)
     week = np.linspace(0, past, past + 1)
     li = [None] * len(week)
-    if len(gb) < 6:
+    for k in range(len(week) - 1):
+        every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
+        result, client = query.request(every, period, cond, gb)
+        li[len(week) - 1 - k] = df
+    df = pd.concat(li, axis=0, join="outer")
+    df = df.reset_index()
+    lli = df[["time", typo]]
+    return lli, client
+
+
+def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, past, typo, dic, field):
+    '''
+    This function slices the request on requests of one week length and after that joins all the data in one dataframe
+
+    Parameters
+    ----------
+    host : str
+        Influxdb host we want to work on.
+    db : str
+        influxdb database to connect to.
+    measurement : str
+        Influxdb's measurement .
+    period : str
+        windows to focus on (duration in influxdb syntax ix "5m").
+    gb : str
+        group by condition of the requeste to write with influx db syntax
+        ex "host,element_to_groupby," => always end with ","
+
+    Returns
+    -------
+    df : str
+        dataframe contening all the data.
+    host : str
+        name of the host, not useful.
+    client : Influxdb object
+        API to interact with the database, will be needed to write the prediction later.
+    '''
+    try:
+        query = Query_all(db, host, typo, field, measurement)
+        week = np.linspace(0, past, past + 1)
+        li = [None] * len(week)
         for k in range(len(week) - 1):
-            every = str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
-            result, client = query.request(every, period, cond, gb)
-            df = result[host]
+            every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
+            df, client = query.request(every, period, cond, gb)
             li[len(week) - 1 - k] = df
         df = pd.concat(li, axis=0, join="outer")
         df = df.reset_index()
         lli = df[["time", typo]]
-    else:
-        for k in range(len(week) - 1):
-            every = str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
-            result, client = query.request(every, period, cond, gb)
-            li[len(week) - 1 - k] = result
-        if result != -1 :
-            dfs = [[None] * (len(week) - 1)] * len(result)
-            t = 0
-            lli = [None] * len(result)
-            if len(result) > 1:
-                for i in range(len(result)):
-                    for j in range(1, len(week)):
-                        dfs[t][j - 1] = li[j][i]
-                    lli[i] = pd.concat(dfs[0], axis=0, join="outer").reset_index()
-                    t = t + 1
-            else :
-                for j in range(1, len(week)):
-                    li[j]  = pd.DataFrame(li[j][0])
-                lli = pd.concat(li, axis=0, join="outer").reset_index()      
-                lli = lli[["time", typo]]              
-        else :
-            lli=None
-    return lli, client
+        return lli, client
+    except UnboundLocalError:
+        if UnboundLocalError:
+            st.write("Choisir l'ensemble des paramètres")
+
 
 def write_predictions(df,client,measurement,host,db,form):
     '''
@@ -190,8 +155,13 @@ def write_predictions(df,client,measurement,host,db,form):
     None.
     '''
     if form[0] != "," :
+<<<<<<< HEAD:Forecasting/prediction_functions.py
         form=","+form
     df["measurement"]="pred_scale_"+measurement
+=======
+        form=","+form 
+    df["measurement"]="PRED_ATTENTION_2"+measurement
+>>>>>>> old-version:Forecasting/functions.py
     fill=(form[1 :].replace("=",",")).split(",")
     if len(form) < 2 :
         fill = "host="+host
@@ -199,7 +169,11 @@ def write_predictions(df,client,measurement,host,db,form):
     key=[elt for idx, elt in enumerate(fill) if idx % 2 == 0]
     values=[elt for idx, elt in enumerate(fill) if idx % 2 != 0]
     dic=dict(zip(key,values))
+<<<<<<< HEAD:Forecasting/prediction_functions.py
     client.delete_series(database=db,measurement="pred_scale_"+measurement,tags=dic)
+=======
+    client.delete_series(database=db,measurement="PRED_ATTENTION_2"+measurement,tags=dic)
+>>>>>>> old-version:Forecasting/functions.py
     cp = df[['ds', 'yhat','yhat_lower','yhat_upper','measurement']].copy()
     lines = [str(cp["measurement"][d])
                      + ",type=forecast"
@@ -215,9 +189,25 @@ def write_predictions(df,client,measurement,host,db,form):
 
 
 
+<<<<<<< HEAD:Forecasting/prediction_functions.py
 
 
 
+=======
+from sklearn.base import BaseEstimator, TransformerMixin
+
+class IdentityTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self, input_array, y=None):
+        return self
+    
+    def transform(self, input_array, y=None):
+        return input_array*1
+    def inverse_transform(self,input_array,y=None):
+        return input_array*1
+>>>>>>> old-version:Forecasting/functions.py
 
 
 

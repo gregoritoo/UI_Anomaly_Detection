@@ -1,13 +1,18 @@
 
 import numpy as np
 import os
+<<<<<<< HEAD
 from prediction_functions import decoupe_dataframe
+=======
+from functions import decoupe_dataframe,IdentityTransformer
+>>>>>>> old-version
 from statsmodels.tsa.seasonal import seasonal_decompose
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping,Callback
 import sys
 from sklearn.preprocessing import PowerTransformer
 import pickle
+import matplotlib.pyplot as plt
 
 def progressbar(it, prefix="", size=60, file=sys.stdout):
     count = len(it)
@@ -224,7 +229,6 @@ class Predictor ():
         data_trend=self.trend[-1*self.look_back : ]
         data_seasonal=self.seasonal[-1*self.look_back : ]
         prediction=np.zeros((1,len_prediction))
-        print(self.look_back)
         for i in progressbar(range(len_prediction), "Computing: ", 40):
             dataset = np.reshape(data_residual,(1, 1,self.look_back))
             prediction_residual=(self.model_residual.predict(dataset))
@@ -264,9 +268,14 @@ class Predictor ():
             array contening the upper boundry values (1,N) size.
 
         '''
+<<<<<<< HEAD
         decomposition = seasonal_decompose(self.df["y"], period = self.freq_period+1)
         mae=-1*np.mean(decomposition.resid)
         std_deviation=np.std(self.residual)
+=======
+        mae=-1*np.mean(self.scaler2.inverse_transform(np.reshape(self.residual,(-1,1))))
+        std_deviation=np.std(self.scaler2.inverse_transform(np.reshape(self.residual,(-1,1))))
+>>>>>>> old-version
         sc = 1.96       #1.96 for a 95% accuracy
         margin_error = mae + sc * std_deviation
         lower = prediction - margin_error

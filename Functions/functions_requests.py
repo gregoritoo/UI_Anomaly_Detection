@@ -122,34 +122,13 @@ def make_sliced_request(host, db, measurement, period, gb, past, typo, dic, fiel
     query = Query_all(db, host, typo, field, measurement)
     week = np.linspace(0, past, past + 1)
     li = [None] * len(week)
-    if len(gb) < 6:
-        for k in range(len(week) - 1):
-            every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
-            result, client = query.request(every, period, cond, gb, dic)
-            df = result[host]
-            li[len(week) - 1 - k] = df
-        df = pd.concat(li, axis=0, join="outer")
-        df = df.reset_index()
-        lli = df[["time", typo]]
-    else:
-        for k in range(len(week) - 1):
-            every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
-            result, client = query.request(every, period, cond, gb, dic)
-            li[len(week) - 1 - k] = result
-        if result != -1:
-            dfs = [[None] * (len(week) - 1)] * len(result)
-            t = 0
-            lli = [None] * len(result)
-            for i in range(len(result)):
-                for j in range(1, len(week)):
-                    try:
-                        dfs[t][j - 1] = li[j][i]
-                    except Exception:
-                        print("error while requesting data")
-                lli[i] = pd.concat(dfs[0], axis=0, join="outer").reset_index()
-                t = t + 1
-        else:
-            lli = None
+    for k in range(len(week) - 1):
+        every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
+        result, client = query.request(every, period, cond, gb, dic)
+        li[len(week) - 1 - k] = df
+    df = pd.concat(li, axis=0, join="outer")
+    df = df.reset_index()
+    lli = df[["time", typo]]
     return lli, client
 
 
@@ -184,6 +163,7 @@ def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, 
         query = Query_all(db, host, typo, field, measurement)
         week = np.linspace(0, past, past + 1)
         li = [None] * len(week)
+<<<<<<< HEAD
         if len(gb) < 6:
             for k in range(len(week) - 1):
                 every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
@@ -218,6 +198,15 @@ def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, 
                     print(lli)
             else:
                 lli = None
+=======
+        for k in range(len(week) - 1):
+            every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
+            df, client = query.request(every, period, cond, gb, dic)
+            li[len(week) - 1 - k] = df
+        df = pd.concat(li, axis=0, join="outer")
+        df = df.reset_index()
+        lli = df[["time", typo]]
+>>>>>>> old-version
         return lli, client
     except UnboundLocalError:
         if UnboundLocalError:
@@ -256,47 +245,12 @@ def make_sliced_request_multicondition_range(host, db, measurement, period, gb, 
     week = np.linspace(0, past, past + 1)
     range = date_range.split("/")
     li = [None] * len(week)
-    if len(gb) < 6:
-        every = "'" + str(range[0]) + "'" + ' AND "time" < ' + "'" + str(range[1]) + "'"
-        result, client = query.request(every, period, cond, gb, dic)
-        df = result[host]
-        df = df.reset_index()
-        lli = df[["time", typo]]
-    else:
-        every = "'" + str(range[0]) + "'" + ' AND "time" < ' + "'" + str(range[1]) + "'"
-        result, client = query.request(every, period, cond, gb, dic)
-        if result != -1:
-            if len(result) > 1:
-                lli = [None] * len(result)
-                for i in range(len(result)):
-                    for j in range(1, len(week)):
-                        result[t][j - 1] = li[j][i]
-                    lli[i] = pd.concat(result[0], axis=0, join="outer").reset_index()
-                    t = t + 1
-            else:
-                every = "'" + str(range[0]) + "'" + ' AND "time" < ' + "'" + str(range[1]) + "'"
-                result, client = query.request(every, period, cond, gb, dic)
-                df = pd.DataFrame(result[0])
-                df = df.reset_index()
-                lli = df[["time", typo]]
-        else:
-            lli = None
+    every = "'" + str(range[0]) + "'" + ' AND "time" < ' + "'" + str(range[1]) + "'"
+    df, client = query.request(every, period, cond, gb, dic)
+    df = df.reset_index()
+    lli = df[["time", typo]]
     return lli, client
 
-
-def one_week_data_request(host, db, measurement, period, gb):
-    if measurement == "mem":
-        query = Query_Mem(db)
-    elif measurement == "cpu":
-        query = Query_Cpu(db)
-    elif measurement == "disk":
-        query = Query_Disk(db)
-    cond = "AND host='" + host + "'"
-    every = str(1) + 'w '
-    result, client = query.request(every, period, cond, gb)
-    df = result[host]
-    df.reset_index()
-    return df, client
 
 
 def make_form(df, host):
