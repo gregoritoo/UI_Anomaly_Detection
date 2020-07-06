@@ -179,114 +179,20 @@ def write_predictions(df,client,measurement,host,db,form):
         print("probblems when sending some values")
 
 
-# create a differenced series
-def difference(dataset, interval=1):
-    diff = list()
-    for i in range(interval, len(dataset)):
-        value = dataset[i] - dataset[i - interval]
-        diff.append(value)
-    return Series(diff)
 
+from sklearn.base import BaseEstimator, TransformerMixin
 
-def inverse_difference(history, yhat, interval=1):
-    return yhat + history[-interval]
-
-def scale(train, test):
-
-
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    scaler = scaler.fit(train)
-
-    train = train.reshape(train.shape[0], train.shape[1])
-    train_scaled = scaler.transform(train)
-
-    test = test.reshape(test.shape[0], test.shape[1])
-    test_scaled = scaler.transform(test)
-    return scaler, train_scaled, test_scaled
-
-
-def invert_scale(scaler, X, value):
-    new_row = [x for x in X] + [value]
-    array = np.array(new_row)
-    array = array.reshape(1, len(array))
-    inverted = scaler.inverse_transform(array)
-    return inverted[0, -1]
-
-def plots(df_a,prediction,pred_trend,pred_residual,pred_seasonal,shift) :
-    decomposition = seasonal_decompose(df_a["y"][-2016 :], period = 5*12*7)
-    plt.plot(prediction[0,:])
-    plt.plot(df_a["y"])
-    plt.show()
-
-    plt.plot(df_a["y"][-2016 :])
-    plt.title("Prediction")
-    plt.show()
-    plt.plot(prediction[0,:])
-    plt.title("Evolution réelle")
-    plt.show()
-
-    plt.plot(prediction[0,:])
-    plt.plot(np.asarray(df_a["y"][-2016 :]))
-    plt.title("Prediction une semaine à l'avance")
-    plt.show()
-
-
-    plt.plot(decomposition.resid)
-    plt.title("Residue")
-    plt.show()
-    plt.plot(decomposition.trend)
-    plt.title("Trend")
-    plt.show()
-    plt.plot(decomposition.seasonal)
-    plt.title("Seasonal")
-    plt.show()
-
-    plt.plot(pred_seasonal[0,:])
-    plt.plot(np.asarray(decomposition.seasonal))
-    plt.plot("Superposition seasonal réelle et prédite")
-    plt.show()
-
-    plt.plot(pred_trend[0,:])
-    plt.plot(np.asarray(decomposition.trend))
-    plt.plot("Superposition trend réelle et prédite")
-    plt.show()
-
-    plt.plot(pred_residual[0,:])
-    plt.plot(np.asarray(decomposition.resid))
-    plt.plot("Superposition residu réelle et prédite")
-    plt.show()
-    return decomposition.resid
-
-def try_normal(data):
-    result = anderson(data)
-    print('Statistic: %.3f' % result.statistic)
-    p = 0
-    for i in range(len(result.critical_values)):
-    	sl, cv = result.significance_level[i], result.critical_values[i]
-    	if result.statistic < result.critical_values[i]:
-    		print('%.3f: %.3f, data looks normal (fail to reject H0)' % (sl, cv))
-    	else:
-    		print('%.3f: %.3f, data does not look normal (reject H0)' % (sl, cv))
-
-    print('Statistic: %.3f' % result.statistic)
-    stat, p = normaltest(data)
-    print('Statistics=%.3f, p=%.3f' % (stat, p))
-    # interpret
-    alpha = 0.05
-    if p > alpha:
-    	print('Sample looks Gaussian (fail to reject H0)')
-    else:
-    	print('Sample does not look Gaussian (reject H0)')
-
-    stat, p = normaltest(data)
-    print('Statistics=%.3f, p=%.3f' % (stat, p))
-    # interpret
-    alpha = 0.05
-    if p > alpha:
-    	print('Sample looks Gaussian (fail to reject H0)')
-    else:
-    	print('Sample does not look Gaussian (reject H0)')
-
+class IdentityTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self, input_array, y=None):
+        return self
+    
+    def transform(self, input_array, y=None):
+        return input_array*1
+    def inverse_transform(self,input_array,y=None):
+        return input_array*1
 
 
 

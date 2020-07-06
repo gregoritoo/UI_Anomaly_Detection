@@ -1,13 +1,14 @@
 
 import numpy as np
 import os
-from functions import decoupe_dataframe
+from functions import decoupe_dataframe,IdentityTransformer
 from statsmodels.tsa.seasonal import seasonal_decompose
 from tensorflow.keras.models import save_model
 from tensorflow.keras.callbacks import EarlyStopping,Callback
 import sys
 from sklearn.preprocessing import PowerTransformer
 import pickle
+import matplotlib.pyplot as plt
 
 def progressbar(it, prefix="", size=60, file=sys.stdout):
     count = len(it)
@@ -101,8 +102,6 @@ class Predictor ():
         scalerfile = path + "/" + 'scaler.sav'
         pickle.dump( self.scaler2, open(scalerfile, 'wb'))
         decomposition = seasonal_decompose(Y, period = freq_period+1)
-        decomposition.plot()
-        plt.show(block=True)
         df.loc[:,'trend'] = decomposition.trend
         df.loc[:,'seasonal'] = decomposition.seasonal
         df.loc[:,'residual'] = decomposition.resid
@@ -226,7 +225,6 @@ class Predictor ():
         data_trend=self.trend[-1*self.look_back : ]
         data_seasonal=self.seasonal[-1*self.look_back : ]
         prediction=np.zeros((1,len_prediction))
-        print(self.look_back)
         for i in progressbar(range(len_prediction), "Computing: ", 40):
             dataset = np.reshape(data_residual,(1, 1,self.look_back))
             prediction_residual=(self.model_residual.predict(dataset))
@@ -241,9 +239,6 @@ class Predictor ():
             data_seasonal = np.append(data_seasonal[1:], [prediction_seasonal]).reshape(-1, 1)
             
             prediction[0,i]=prediction_residual+prediction_trend+prediction_seasonal
-        plt.plot(np.reshape(prediction,(1,-1)))
-        plt.show(bloc=True)
-        print('inervse prediction ', self.scaler2.inverse_transform(np.reshape(prediction,(-1,1))))
         prediction=self.scaler2.inverse_transform(np.reshape(prediction, (-1, 1)))
         lower,upper=self.frame_prediction(np.reshape(prediction,(1,-1)))
         return np.reshape(prediction,(1,-1)),lower,upper
@@ -270,7 +265,7 @@ class Predictor ():
 
         '''
         mae=-1*np.mean(self.scaler2.inverse_transform(np.reshape(self.residual,(-1,1))))
-        std_deviation=np.std(self.residual)
+        std_deviation=np.std(self.scaler2.inverse_transform(np.reshape(self.residual,(-1,1))))
         sc = 1.96       #1.96 for a 95% accuracy
         margin_error = mae + sc * std_deviation
         lower = prediction - margin_error
