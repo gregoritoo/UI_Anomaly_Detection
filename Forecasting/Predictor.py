@@ -96,12 +96,13 @@ class Predictor ():
         scaler = PowerTransformer()
         self.scaler2=scaler.fit(np.reshape(np.array(df["y"]), (-1, 1)))
         Y =  self.scaler2.transform(np.reshape(np.array(df["y"]), (-1, 1)))
-        print(Y)
         if not os.path.isdir(path):
             os.makedirs(path)
         scalerfile = path + "/" + 'scaler.sav'
         pickle.dump( self.scaler2, open(scalerfile, 'wb'))
         decomposition = seasonal_decompose(Y, period = freq_period+1)
+        decomposition.plot()
+        plt.show(block=True)
         df.loc[:,'trend'] = decomposition.trend
         df.loc[:,'seasonal'] = decomposition.seasonal
         df.loc[:,'residual'] = decomposition.resid
@@ -240,7 +241,8 @@ class Predictor ():
             data_seasonal = np.append(data_seasonal[1:], [prediction_seasonal]).reshape(-1, 1)
             
             prediction[0,i]=prediction_residual+prediction_trend+prediction_seasonal
-        print("prediction ",np.reshape(prediction,(1,-1)))
+        plt.plot(np.reshape(prediction,(1,-1)))
+        plt.show(bloc=True)
         print('inervse prediction ', self.scaler2.inverse_transform(np.reshape(prediction,(-1,1))))
         prediction=self.scaler2.inverse_transform(np.reshape(prediction, (-1, 1)))
         lower,upper=self.frame_prediction(np.reshape(prediction,(1,-1)))

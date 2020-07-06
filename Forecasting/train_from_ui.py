@@ -112,12 +112,14 @@ client_2 = InfluxDBClient(host="localhost", port=8086)
 client_2.switch_database(db)
 ########## fin partie à supprimer 
 dic=""
-len_prediction=transform_time(period)*12
-nb_week_to_query=12
+len_prediction=transform_time(period)*2
+nb_week_to_query=13
 look_back = transform_time(period)*1
 df, client = make_sliced_request_multicondition(host, db, measurement, period, gb, cond, nb_week_to_query, typo,dic,field)
 df = modifie_df_for_fb(df, typo)
 df_a=df
+plt.plot(df["y"])
+plt.show(block=True)
 prediction,lower,upper=predict(df,form,len_prediction,host,measurement,db,severity,freq_period,look_back,force_ml_model)
 dates=pd.date_range(df["ds"][len(df)-12],freq=time_obj.pandas_time, periods=len_prediction)
 df2=pd.DataFrame({"ds" : dates , "yhat" : np.transpose(prediction[0]),"yhat_upper" :np.transpose(upper[0]),"yhat_lower" :np.transpose(lower[0]) })
@@ -125,8 +127,8 @@ df=df.append(df2[ :]).reset_index()
 write_predictions(df,client_2,measurement,host,db,form)
 #########a supprimer avant de mettre en prod
 cp = df_a[['ds', 'y']].copy()
-cp["measurement"]="historical_"+measurement
-client_2.delete_series(database=db,measurement="historical_"+measurement,tags={ "tag" : form[1 :]})
+cp["measurement"]="Historical_"+measurement
+client_2.delete_series(database=db,measurement="Historical_"+measurement,tags={ "tag" : form[1 :]})
 lines = [str(cp["measurement"][d]) 
                          + ",type=forecast"
                          + form

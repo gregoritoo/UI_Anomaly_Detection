@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 25 09:14:31 2020
-
-@author: GSCA
-"""
-
 import os
 import numpy as np
 import pandas as pd
@@ -20,7 +13,6 @@ INFLUX_HOST = "influxdb-monitoring.supralog.com"
 INFLUX_SSL = True
 INFLUX_VERIFY_SSL = True
 
-
 class Query():
     '''
     Mother class for requests
@@ -29,6 +21,7 @@ class Query():
     def __init__(self, field, db):
         self.field = field
         self.db = db
+        self.client = self.connect_database()
 
     def connect_database(self):
         client = InfluxDBClient(host=INFLUX_HOST, port=INFLUX_PORT, username=INFLUX_NAME, password=INFLUX_PASSWORD,
@@ -85,85 +78,36 @@ class Query():
                result of the request
 
         '''
-        query = 'SELECT '+ self.typo + "("+self.field + ') FROM "' + self.db + '"."autogen".' + measurement + ' WHERE "time" > now() - ' + every + cond + ' GROUP BY ' + gb + 'time(' + period + ') fill(0)'
+        if measurement == "healthCheck" :
+            query = 'SELECT ' + self.field + ' FROM "' + self.db + '"."autogen".' + measurement + ' WHERE "time" > ' + every + cond + ' GROUP BY ' + gb[: -1]
+        elif measurement == "appErrors" :
+            query = 'SELECT ' + "(err"+') FROM "' + self.db + '"."autogen".' + measurement + ' WHERE "time" > ' + every + cond + ' GROUP BY ' +  gb[: -1]
+        else :
+            query = 'SELECT ' + self.typo + "(" + self.field + ') FROM "' + self.db + '"."autogen".' + measurement + ' WHERE "time" > ' + every + cond + ' GROUP BY ' + gb + 'time(' + period + ') fill(previous)'
         print(query)
         self.gb = gb
         results = client.query(query)
-        return results
+        return pd.DataFrame(results.get_points(measurement=measurement))
 
-    def arrange_results_query(self, results):
-        '''
 
-        This function arrange the request's result (Json type) in a dataframe :
-
-            The result has many groups (one group by class after applying the groupby )
-
-            In this groups : one row with columns's names row(0)
-
-                               rows with the values row(1 to end)
-
-        Note : NEED TO DEFINE name and password as variables environnement for connection to influxdb
-
-        Parameters
-
-        ----------
-
-        results : request.response
-
-           result of the request
-
-        db : str
-
-        Returns
-
-        -------
-
-        d : dataframe
-
-            dataframe containing the data.
-
-        client : Influxdb object
-
-            API to interact with the database, will be needed to write the prediction later.
-
-        '''
-        li = {}
-        if len(results.raw) >= 1:
-            if len(results.raw["series"][0]["tags"]) == 1:
-                for i in range(len(results.raw["series"])):
-                    NAME = results.raw["series"][i]["tags"]["host"]
-                    li[NAME] = pd.DataFrame(results.raw["series"][i]["values"],
-                                           columns=results.raw["series"][0]["columns"])
-            elif len(results.raw["series"][0]["tags"]) > 1:
-                li = [None] * len(results.raw["series"])
-                for i in range(len(results.raw["series"])):
-                    df = pd.DataFrame(results.raw["series"][i]["values"],
-                                      columns=results.raw["series"][0]["columns"])
-                    for p in range(0, len(results.raw["series"][i]["tags"])):
-                        df[self.gb.split(",")[p]] = results.raw["series"][i]["tags"][self.gb.split(",")[p]]
-                    li[i] = df
-                NAME = ""
-            return li
-
-        else:
-            print("error, please verify the connection with the database or the query")
-            return -1
     def request(self, every, period, cond, gb):
-        self.connect_database()
-        results = self.make_query(self.measurement, every, cond, gb, period, self.client)
-        df = self.arrange_results_query(results)
+        client = self.connect_database()
+        df = self.make_query(self.measurement, every, cond, gb, period, self.client)
         return df, self.client
+
+
 
 class Query_all(Query):
     '''
         Child class for requesting memory's data
         '''
 
-    def __init__(self, db, host, typo, field,measurement):
+    def __init__(self, db, host, typo, field, measurement):
         self.host = host
         self.measurement = measurement
         self.field = field
         self.typo = typo
         Query.__init__(self, self.field, db)
+
 
 
