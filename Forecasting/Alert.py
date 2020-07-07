@@ -92,7 +92,7 @@ class Alert():
         self.form=self.form[1 :].replace("=",".")
         self.form=self.form.replace(",","_")
         self.form=self.form.replace(":","")
-        self.path=r"Alerte/alerte_"+self.measurement+"_"+self.form+".tick"
+        self.path=r"Forecasting_Alerte/alerte_"+self.measurement+"_"+self.form+".tick"
         self.path=self.path.replace(" ","")
         print(self.path)
         with open(self.path,"w") as f :

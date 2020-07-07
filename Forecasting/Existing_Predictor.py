@@ -38,9 +38,10 @@ class Existing_Predictor(Predictor):
             value=element.split("=")
             file=file+'_'+value[1]
         file=file[1 :].replace(":","")
-        model_trend=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"trend"+".h5")
-        model_seasonal=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"seasonal"+".h5")
-        model_residual=load_model(r"../Modeles/"+file+"_"+self.measurement+"/"+"residual"+".h5")
+        print(r"../Modeles_pred/"+file+"_"+self.measurement+"/"+"trend"+".h5")
+        model_trend=load_model(r"../Modeles_pred/"+file+"_"+self.measurement+"/"+"trend"+".h5")
+        model_seasonal=load_model(r"../Modeles_pred/"+file+"_"+self.measurement+"/"+"seasonal"+".h5")
+        model_residual=load_model(r"../Modeles_pred/"+file+"_"+self.measurement+"/"+"residual"+".h5")
         print("loaded")
         return model_trend,model_seasonal,model_residual
     

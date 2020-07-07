@@ -91,11 +91,12 @@ class Predictor ():
         except Exception:
             file = self.host
         file = file.replace(" ", "")
-        path = "Modeles/" + file + "_" + self.measurement
+        path = "Modeles_pred/" + file + "_" + self.measurement
+        print(path)
         self.look_back=look_back
         df=df.dropna()
-        scalerfile = path + "/" + 'scaler.sav'
-        if not scalerfile :
+        scalerfile = path + "/" + 'scaler_pred.sav'
+        if not os.path.isfile(scalerfile):
             if (df["y"].max() - df["y"].min()) > 100:
                 scaler = PowerTransformer()
             else :
