@@ -50,86 +50,32 @@ def modifie_df_for_fb(dfa, typo):
     count_2 = np.zeros((1, 24))
     if type(dfa) == list:
         df = dfa[0]
-        TIME = [None] * len(df['time'])
-        # modification du timestamp en format compréhensible par le modèle
-        for i in range(len(df['time'])):
-            dobj_a = datetime.strptime(df['time'][i], '%Y-%m-%dT%H:%M:%SZ')
-            dobj_a.replace(tzinfo=None)
-            # dobj=dobj+ timedelta(hours=2)
-            dobj = dobj_a.strftime('%Y-%m-%d %H:%M:%S')
-            number_day = dobj_a.strftime('%w')
-            hour=dobj_a.strftime('%H')
-            count[0, int(number_day)] = count[0, int(number_day)] + df[typo][i]
-            count_2[0, int(hour)] = count_2[0, int(hour)] + df[typo][i]
-            TIME[i] = dobj
+    else :
+        df=dfa
+    TIME = [None] * len(df['time'])
+    # modification du timestamp en format compréhensible par le modèle
+    for i in range(len(df['time'])):
+        dobj_a = datetime.strptime(df['time'][i], '%Y-%m-%dT%H:%M:%SZ')
+        dobj_a.replace(tzinfo=None)
+        # dobj=dobj+ timedelta(hours=2)
+        dobj = dobj_a.strftime('%Y-%m-%d %H:%M:%S')
+        number_day = dobj_a.strftime('%w')
+        hour = dobj_a.strftime('%H')
+        count[0, int(number_day)] = count[0, int(number_day)] + df[typo][i]
+        count_2[0, int(hour)] = count_2[0, int(hour)] + df[typo][i]
+        TIME[i] = dobj
 
+    if type(dfa) == list:
         for i in range(len(dfa)):
             dfa[i]["time"] = TIME
             dfa[i] = dfa[i].rename(columns={"time": "ds", typo: "y"})
-    else:
-        df = dfa
-        TIME = [None] * len(df['time'])
-        # modification du timestamp en format compréhensible par le modèle
-        for i in range(len(df['time'])):
-            dobj_a = datetime.strptime(df['time'][i], '%Y-%m-%dT%H:%M:%SZ')
-            dobj_a.replace(tzinfo=None)
-            # dobj=dobj+ timedelta(hours=2)
-            dobj = dobj_a.strftime('%Y-%m-%d %H:%M:%S')
-            number_day = dobj_a.strftime('%w')
-            hour = dobj_a.strftime('%H')
-            count[0, int(number_day)] = count[0, int(number_day)] + df[typo][i]
-            count_2[0, int(hour)] = count_2[0, int(hour)] + df[typo][i]
-            TIME[i] = dobj
-
+    else :
         df["time"] = TIME
         df = df.reset_index(drop=True)
         dfa = df.rename(columns={"time": "ds", typo: "y"})
     return dfa,count,count_2
 
 
-
-
-
-
-def make_sliced_request(host, db, measurement, period, gb, past, typo, dic, field):
-    '''
-    This function slices the request on requests of one week length and after that joins all the data in one dataframe
-
-    Parameters
-    ----------
-    host : str
-        Influxdb host we want to work on.
-    db : str
-        influxdb database to connect to.
-    measurement : str
-        Influxdb's measurement .
-    period : str
-        windows to focus on (duration in influxdb syntax ix "5m").
-    gb : str
-        group by condition of the requeste to write with influx db syntax
-        ex "host,element_to_groupby," => always end with ","
-
-    Returns
-    -------
-    df : str
-        dataframe contening all the data.
-    host : str
-        name of the host, not useful.
-    client : Influxdb object
-        API to interact with the database, will be needed to write the prediction later.
-    '''
-    cond = ""
-    query = Query_all(db, host, typo, field, measurement)
-    week = np.linspace(0, past, past + 1)
-    li = [None] * len(week)
-    for k in range(len(week) - 1):
-        every = " now() -" + str(int(week[k + 1])) + 'w AND "time" < now() - ' + str(int(week[k])) + 'w '
-        result, client = query.request(every, period, cond, gb, dic)
-        li[len(week) - 1 - k] = df
-    df = pd.concat(li, axis=0, join="outer")
-    df = df.reset_index()
-    lli = df[["time", typo]]
-    return lli, client
 
 
 def make_sliced_request_multicondition(host, db, measurement, period, gb, cond, past, typo, dic, field):
@@ -256,3 +202,50 @@ def transform_time(period):
         nb_points = int(period[0:len(period) - 1]) * 1
     return (nb_points)
 
+
+def write_predictions(df,client,measurement,host,db,form):
+    '''
+    This function write  predictions in the proper way to be send to the database and then send it.
+
+    Parameters
+    ----------
+    df : dataframe
+        no needed .
+    client : Influxdb object
+        DESCRIPTION.
+    measurement : str
+        Influxdb's measurement .
+    host : str
+        name of thz host, not useful.
+    forecast : dataframe
+        extended dataframe with the prediction included.
+    db : str
+        influxdb database to connect to.
+
+    Returns
+    -------
+    None.
+    '''
+    if form[0] != "," :
+        form=","+form
+    df["measurement"]="PRED_"+measurement
+    fill=(form[1 :].replace("=",",")).split(",")
+    if len(form) < 2 :
+        fill = "host="+host
+        form = "," + fill
+    key=[elt for idx, elt in enumerate(fill) if idx % 2 == 0]
+    values=[elt for idx, elt in enumerate(fill) if idx % 2 != 0]
+    dic=dict(zip(key,values))
+    client.delete_series(database=db,measurement="PRED_"+measurement,tags=dic)
+    cp = df[['ds', 'yhat','yhat_lower','yhat_upper','measurement']].copy()
+    lines = [str(cp["measurement"][d])
+                     + ",type=forecast"
+                     + form
+                     + " "
+                     + "yhat=" + str(cp["yhat"][d]) + ","
+                     + "yhat_lower=" + str(cp["yhat_lower"][d]) + ","
+                     + "yhat_upper=" + str(cp["yhat_upper"][d])+ " " + str(int(time.mktime(datetime.strptime(str(cp['ds'][d]), "%Y-%m-%d %H:%M:%S").timetuple()))) + "000000000" for d in range(len(cp))]
+    try :
+        client.write(lines,{'db':db},204,'line')
+    except Exception :
+        print("probblems when sending some values")

@@ -1,5 +1,5 @@
 import streamlit as st
-from Functions.functions_interface import connect_database, get_field_names,applied_model
+from Functions.functions_interface import connect_database, get_field_names
 import pickle
 from Alertes.Alert_IA import Alert_IA
 from Alertes.Alert import Alert
@@ -21,7 +21,7 @@ class Page():
     def __init__(self,db):
         print("Switching to page one")
 
-    def make_side_component(self,db,write_request):
+    def make_side_component(self,db,write_request,analyse=False):
         nb_pas = st.number_input('Select frequency (in minutes)')
         group_by_time=int(nb_pas)
         period = str(int(nb_pas)) + "m"
@@ -42,8 +42,7 @@ class Page():
         )
 
         cond = " AND host='" + host + "'"
-
-        cond, field, results, gb = write_request(measurement, cond, gb, client,1)
+        cond, field, results, gb = write_request(measurement, cond, gb, client,1,analyse)
 
         typo = st.sidebar.selectbox(
             " Choose the aggregation function ",
@@ -124,7 +123,7 @@ class Page():
 
 
 
-    def save_or_apply_model(self,model,save,Model,host,measurement,form,field,typo,db,nb_pas,period,gb,cond):
+    def save_or_apply_model(self,model,save,Model,host,measurement,form,field,typo,db,nb_pas,period,gb,cond,c):
         freq_period = st.number_input(
             "Taille du motif qui se répète ; il doit être un nombre impaire qui correspond à la fréquence d'échantillonage")
         force_ml_model = "No"
@@ -135,19 +134,33 @@ class Page():
         prediction = st.button("Launch ML model training")
         st.write("Ceci va lancer l'entrainement ainsi que la prédiction de la mesure pour les trois prochain mois")
 
-        if save and Model != "Model_IA":
+        if save and Model != "Model_VAR_LSTM" :
+            file = ""
+            if type(form) != list:
+                forma = form[1:].split(",")
+            else:
+                forma = form
+            try:
+                for element in forma:
+                    value = element.split("=")
+                    file = file + '_' + value[1]
+                file = file[1:].replace(":", "")
+            except Exception:
+                file = host
+            file = file.replace(" ", "")
             path_to_model = r'Modeles_AD/model_' + form[1:].replace(" ","") + '.sav'
             pickle.dump(model, open(path_to_model, 'wb'))
             alerte = Alert(host, measurement)
-            message = " Alert trigged : this is an anomalie "
+            message='{{ .Level }} Point anormal associe a host : '+ host + file + "_" + " champs = "+"_"+field+'avec une valeur de {{ index .Fields "value" }} à :{{ .Time }}'
             alerte.create(message, form, nb_pas, path_to_model, field, typo, db)
             alerte.save_alert()
             time.sleep(1)
             alerte.launch()
-            st.write("Model saved and alert trigged !")
+            st.write("Model saved and alert created !")
             save = False
-        elif save and Model == "ENCODER_VAR_LSTM":
+        elif save and Model == "Model_VAR_LSTM":
             file = ""
+            form_before=form
             if type(form) != list:
                 form = form[1:].split(",")
             else:
@@ -160,10 +173,13 @@ class Page():
             except Exception:
                 file = host
             file = file.replace(" ", "")
-            path_to_model = "Modeles_AD/" + file + "_" + measurement+field
-            message = " Alert trigged : this is an anomalie "
+            path_to_model = "Modeles_AD/" + file + "_" + measurement
+            message = '{{ .Level }} Point anormal associe a host : '+ host + file + "_" + " champs = "+"_"+field+'avec une valeur de {{ index .Fields "value" }} à :{{ .Time }}'
             alerte = Alert_IA(host, measurement)
-            alerte.create(message, form, period, path_to_model, field, typo, db, model, freq_period)
+            with open(path_to_model.split("/")[0] + "/" + path_to_model.split("/")[1] + '/params_var_model.txt',
+                      'r') as txt_file:
+                look_back = txt_file.read()
+            alerte.create( message, form_before, int(period[: -1]), path_to_model, field, typo, db, int(look_back), c)
             alerte.save_alert()
             time.sleep(1)
             alerte.launch()

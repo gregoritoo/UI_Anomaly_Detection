@@ -62,7 +62,7 @@ def predict(df,form,len_prediction,host,measurement,db,severity,freq_period):
                          metric="mse",
                          nb_features=1,
                          optimizer="Adamax",
-                         nb_epochs=300,
+                         nb_epochs=50,
                          nb_batch=100,
                          form=form,
                          freq_period=7)
@@ -91,7 +91,7 @@ db="telegraf"
 gb=""
 
 look_back=transform_time(period)
-len_prediction=look_back*12
+len_prediction=look_back*4
 dic=""
 #########a supprimer avant de mettre en prod
 

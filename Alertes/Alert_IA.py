@@ -9,7 +9,7 @@ class Alert_IA():
         self.measurement = measurement
         self.texte = ""
 
-    def create(self, message, form, pas, path_to_model, field, typo, db,c,freq_period):
+    def create(self, message, form, pas, path_to_model, field, typo, db,look_back,threshold):
         self.form = form
         '''
         Create the tick alert 
@@ -39,18 +39,16 @@ class Alert_IA():
         texte = texte + "\n\n" + """var data = batch
                 |query('SELECT """ + typo + """(*) FROM """ + db + """."autogen".""" + self.measurement + """ WHERE """ + where_condition[
                                                                                                                           : -5] + """')
-                    .period(""" + str(int(4 * pas)) + """m)
+                    .period(""" + str(int(2*look_back * pas)) + """m)
                     .every(""" + str(int(pas)) + """m)
                     .groupBy(time(""" + str(int(pas)) + """m))
 
                 data
-                  @udf_test_IA()
+                  @udf_test_VAR_IA()
                     .field('""" + typo + """_""" + field + """')
-                    .size(3)
+                    .size("""+str(int(look_back))+""")
                     .model('""" + path_to_model + """')
-                    .freq_period('"""+freq_period+"""')
-                    .c('"""+c+"""')
-                    .typo('"""+typo+"""
+                    .threshold("""+str(int(threshold))+""")
                   |alert()
                     .crit(lambda: "val_anomalies" > 10)
                     .message('""" + message + """')
@@ -61,7 +59,6 @@ class Alert_IA():
                         .measurement('anomalies')
                         .tag('measurement','""" + self.measurement + """')\n
                         """ + tags.replace("var ", "")
-
         self.texte = texte
 
     def save_alert(self):

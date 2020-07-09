@@ -1,10 +1,10 @@
 import streamlit as st
-from Functions.functions_interface import applied_model
+from Functions.functions_interface import select_apply_model
 import os
 from Functions.functions_requests import make_form
 from Pages.Page import Page
 from Functions.functions_requests import load_data
-from Functions.functions import make_sliced_request_multicondition,transform_time,modifie_df_for_fb
+from Functions.functions_requests import make_sliced_request_multicondition,transform_time,modifie_df_for_fb
 
 
 
@@ -33,8 +33,8 @@ class Page_one(Page):
             ("SeasonalAD", "InterQuartileRangeAD", "PersistAD", "LevelShiftAD", "VolatilityShiftAD",
              "AutoregressionAD","Modele_custom","Model_VAR_LSTM")
         )
-        model = applied_model(Model, df, dfa_2, period, host, measurement, path, form)
+        model,c = select_apply_model(Model, df, dfa_2, period, host, measurement, path, form)
         save = st.button("Save model")
-        return model, Model, save
+        return model, Model, save,c
 
 

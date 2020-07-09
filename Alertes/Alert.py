@@ -37,8 +37,7 @@ class Alert():
             texte = texte + element + "\n"
             tags = tags + ".tag('" + element.split("=")[0] + "'," + element.split("=")[1] + ")\n"
         texte = texte + "\n\n" + """var data = batch
-                |query('SELECT """ + typo + """(*) FROM """ + db + """."autogen".""" + self.measurement + """ WHERE """ + where_condition[
-                                                                                                                          : -5] + """')
+                |query('SELECT """ + typo + """(*) FROM """ + db + """."autogen".""" + self.measurement + """ WHERE """ + where_condition[ : -5] + """')
                     .period(""" + str(int(25 * pas)) + """m)
                     .every(""" + str(int(pas)) + """m)
                     .groupBy(time(""" + str(int(pas)) + """m))

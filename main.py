@@ -4,10 +4,9 @@ import streamlit as st
 import os
 from Pages.Page_two import Page_two
 from Pages.Page_one import Page_one
-from Functions.functions_interface import  write_request,write_request_analyse
-from Functions.functions import transform_time
+from Functions.functions_interface import  write_request
 from Pages.Page_three import Page_three
-from Pages.Page_four import Page_four
+import plotly.express as px
 
 path_to_bat = os.environ["Scripts_UI"]
 
@@ -32,35 +31,27 @@ selection = st.sidebar.radio("Go to", list(PAGES.keys()))
 
 page = PAGES[selection]
 db = "telegraf"
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.widgets import SpanSelector
-import plotly.graph_objects as go
 
-def onselect(xmin, xmax):
-    print("hello")
+
 if page == 1:
 
         first_page=Page_one(db)
         measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time=first_page.make_side_component(db,write_request)
         date_range = st.text_input("select problematique time range", "2019-09-01/2019-09-30")
         form,df,dfa_2=first_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field, date_range)
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(x=list(df.index), y=list(df.y)))
-        fig.update_layout(
-            title_text="Time series with range slider and selectors"
-        )
+        fig = px.line(df, x='ds', y='y')
+        fig.update_xaxes(rangeslider_visible=False)
         st.plotly_chart(fig)
-        model,Model,save=first_page.anomaly_detection(form, measurement, df, dfa_2, period, host)
 
-        first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,group_by_time,period,gb,cond)
+        model,Model,save,c=first_page.anomaly_detection(form, measurement, df, dfa_2, period, host)
+
+        first_page.save_or_apply_model(model,save,Model,host,measurement,form,field,typo,db,group_by_time,period,gb,cond,c)
 
 elif page == 2:
     try :
         second_page = Page_two(db)
         measurement, dic, field, cond, gb, results, typo, period, host, nb_week_to_query, nb_pas,group_by_time= second_page.make_side_component(
-            db,write_request_analyse)
+            db,write_request,True)
         List,COUNT,COUNT_2=second_page.get_data(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field)
         second_page.plot_pie(List,cond)
         second_page.plot_line_chart(List,cond)

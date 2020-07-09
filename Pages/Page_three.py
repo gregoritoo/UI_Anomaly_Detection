@@ -1,12 +1,10 @@
 import streamlit as st
-from Functions.functions_interface import connect_database, get_field_names
-from Functions.functions_requests import make_sliced_request_multicondition, modifie_df_for_fb
+from Functions.functions_interface import connect_database, get_field_names,select_apply_model
+from Functions.functions_requests import make_sliced_request_multicondition, modifie_df_for_fb,load_data_for_analyse
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 from Pages.Page import Page
-from Functions.functions_requests import load_data_for_analyse
-from Functions.functions_interface import applied_model
-import os
+
 
 def load_data_for_analyse(host, db, measurement, period, gb, cond, nb_week_to_query, typo, dic, field):
     dfa, client = make_sliced_request_multicondition(host, db, measurement, period, gb, cond, nb_week_to_query,
@@ -78,6 +76,6 @@ class Page_three(Page):
              "AutoregressionAD")
         )
 
-        model = applied_model(Model, df, dfa_2, period, host, measurement, path, form)
+        model = select_apply_model(Model, df, dfa_2, period, host, measurement, path, form)
         save = st.button("Save model")
         return model
